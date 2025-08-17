@@ -5,20 +5,42 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Толкование снов — MVP (GPT-5)</title>
   <style>
-    body{margin:0;background:#0b0c10;color:#e8eaf0;font:16px/1.5 system-ui,Segoe UI,Roboto,Arial}
+    :root{
+      --bg:#0b0c10; --card:#12141a; --muted:#9aa4b2; --line:#222533;
+      --ink:#e8eaf0; --pill:#1e2633; --accent1:#14b8a6; --accent2:#06b6d4;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,Segoe UI,Roboto,Arial}
     .wrap{max-width:880px;margin:40px auto;padding:20px}
-    .card{background:#12141a;border:1px solid #222533;border-radius:18px;padding:24px}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:24px}
     h1{margin:0 0 6px;font-size:34px}
-    .tagline{margin:0 0 18px;color:#9aa4b2}
+    .tagline{margin:0 0 18px;color:var(--muted)}
     label{display:block;margin:12px 0 6px}
-    textarea,input,select{width:100%;background:#0f1117;border:1px solid #2a2f3a;color:#e8eaf0;border-radius:12px;padding:12px}
+    textarea,input,select{width:100%;background:#0f1117;border:1px solid var(--line);color:var(--ink);border-radius:12px;padding:12px}
     textarea{min-height:140px}
-    button{border:0;background:linear-gradient(135deg,#14b8a6,#06b6d4);color:#07131a;font-weight:700;padding:12px 16px;border-radius:12px;cursor:pointer}
+    button{border:0;background:linear-gradient(135deg,var(--accent1),var(--accent2));color:#07131a;font-weight:700;padding:10px 14px;border-radius:12px;cursor:pointer}
     .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-    .muted{color:#9aa4b2}
-    pre{white-space:pre-wrap;background:#0f1117;border:1px solid #2a2f3a;border-radius:12px;padding:12px}
+    .muted{color:var(--muted)}
     details{margin-top:8px}
     summary{cursor:pointer;color:#cbd5e1}
+    .status{margin:8px 0}
+    .out{background:#0f1117;border:1px solid var(--line);border-radius:14px;padding:16px}
+    details.sec{border-top:1px solid var(--line);padding-top:6px;margin-top:8px}
+    details.sec:first-of-type{border-top:0;padding-top:0;margin-top:0}
+    details.sec > summary{list-style:none;position:relative;font-weight:700;margin:0 0 6px}
+    details.sec > summary::-webkit-details-marker{display:none}
+    details.sec > summary:after{content:"▾";position:absolute;right:0;transition:transform .2s ease}
+    details.sec[open] > summary:after{transform:rotate(180deg)}
+    .pill{display:inline-block;background:var(--pill);padding:6px 10px;border-radius:999px;margin:0 8px 8px 0;border:1px solid var(--line);font-weight:600}
+    .symbol{margin:6px 0 12px}
+    .symbol ul{margin:6px 0 0 18px;padding:0}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .note{font-style:italic;color:var(--muted)}
+    .ok{color:#86efac}
+    .err{color:#fca5a5}
+    .controls{display:flex;gap:10px;justify-content:flex-end;margin-bottom:6px}
+    .jsonbox{white-space:pre-wrap;background:#0a0c12;border:1px dashed var(--line);border-radius:10px;padding:10px;color:#cbd5e1}
+    .ghost{background:transparent;border:1px solid var(--line);color:#cbd5e1}
   </style>
 </head>
 <body>
@@ -26,8 +48,7 @@
     <div class="card">
       <h1>Толкование снов — MVP</h1>
       <p class="tagline">
-        Юнг + Фрейд <i>без мистики</i>: коротко, ясно, по-человечески.  
-        Нажмите «Интерпретировать» — получите ответ в 10 блоках: краткий вывод, символы, Юнг, Фрейд, интеграция, практика, вопросы и др.
+        Юнг + Фрейд <i>без мистики</i>: коротко, ясно, по-человечески. Нажмите «Интерпретировать» — получите ответ в 10 блоках: краткий вывод, символы, Юнг, Фрейд, интеграция, практика, вопросы и др.
       </p>
 
       <label for="dream">Опишите ваш сон *</label>
@@ -35,13 +56,11 @@
 
       <details>
         <summary>Контекст (необязательно)</summary>
-
         <div class="row">
           <div>
             <label for="age">Возраст</label>
             <input id="age" placeholder="Напр., 28" />
           </div>
-
           <div>
             <label for="gender">Пол</label>
             <select id="gender">
@@ -52,10 +71,8 @@
             </select>
           </div>
         </div>
-
         <label for="stress">Стресс-фактор</label>
         <input id="stress" placeholder="Напр., дедлайны, переезд, конфликт…" />
-
         <label for="repeats">Сон повторяется?</label>
         <select id="repeats">
           <option value="">Не указано</option>
@@ -69,22 +86,28 @@
         <button id="copy">Скопировать</button>
       </div>
 
-      <div id="status" class="muted" style="margin:8px 0">Готово.</div>
-      <pre id="out" class="muted">Здесь появится структурированный разбор (JSON → потом можно красиво отрендерить).</pre>
+      <div id="status" class="status muted">Готово.</div>
+      <div id="out" class="out muted">Здесь появится красиво оформленный разбор.</div>
+
+      <details style="margin-top:10px">
+        <summary>Показать сырой JSON (отладка)</summary>
+        <div id="raw" class="jsonbox"></div>
+      </details>
     </div>
 
-    <p class="muted" style="margin-top:10px">
-      Дисклеймер: творческая интерпретация, не медицинский/юридический совет.
-    </p>
+    <p class="muted" style="margin-top:10px">Дисклеймер: творческая интерпретация, не медицинский/юридический совет.</p>
   </div>
 
 <script>
-  // ⬇️ ВСТАВЬ URL ТВОЕГО CLOUDFLARE WORKER
+  // ⬇️ URL твоего CLOUDFLARE WORKER
   const BACKEND_URL = "https://dream-interpreter.shir81023.workers.dev/interpret";
 
   const $ = sel => document.querySelector(sel);
   const s = $('#status');
   const out = $('#out');
+  const raw = $('#raw');
+
+  function esc(x=''){return String(x).replace(/[&<>"]/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[m]))}
 
   function payload(){
     return {
@@ -107,10 +130,87 @@
     return true;
   }
 
+  // --- Рендеринг секций с возможностью сворачивать ---
+  function section(title, html, open=true){
+    return `<details class="sec" ${open?'open':''}>
+      <summary>${esc(title)}</summary>
+      <div>${html}</div>
+    </details>`;
+  }
+
+  function renderSymbols(list=[]){
+    if(!Array.isArray(list) || !list.length) return '';
+    return section('Символы', list.map(it=>{
+      const m = Array.isArray(it.meanings)? it.meanings.map(v=>`<li>${esc(v)}</li>`).join('') : '';
+      return `<div class="symbol">
+        <span class="pill">${esc(it.symbol || 'символ')}</span>
+        ${m ? `<ul>${m}</ul>` : ''}
+      </div>`;
+    }).join(''), true);
+  }
+
+  function renderList(title, items=[], open=false){
+    if(!Array.isArray(items) || !items.length) return '';
+    return section(title, `<ul style="margin:0 0 0 18px;padding:0">${items.map(v=>`<li>${esc(v)}</li>`).join('')}</ul>`, open);
+  }
+
+  function renderCards(freud_brief, jung_brief, open=false){
+    if(!freud_brief && !jung_brief) return '';
+    return section('Коротко по Фрейду / Юнгу', `
+      <div class="grid2">
+        <div style="background:#0f1117;border:1px solid var(--line);border-radius:12px;padding:12px">
+          <div class="pill">Фрейд</div>
+          <div>${esc(freud_brief||'—')}</div>
+        </div>
+        <div style="background:#0f1117;border:1px solid var(--line);border-radius:12px;padding:12px">
+          <div class="pill">Юнг</div>
+          <div>${esc(jung_brief||'—')}</div>
+        </div>
+      </div>
+    `, open);
+  }
+
+  function controlsBar(){
+    return `<div class="controls">
+      <button id="collapseAll" class="ghost">Свернуть всё</button>
+      <button id="expandAll" class="ghost">Развернуть всё</button>
+    </div>`;
+  }
+
+  function renderHTML(d){
+    try{
+      let htmlBlocks = [];
+      if(d.summary) htmlBlocks.push(section('Кратко', `<div>${esc(d.summary)}</div>`, true));
+      htmlBlocks.push(renderSymbols(d.symbols));
+      htmlBlocks.push(renderList('Юнг (наблюдения)', d?.jung?.points || d?.jung || [], false));
+      htmlBlocks.push(renderList('Фрейд (наблюдения)', d?.freud?.points || d?.freud || [], false));
+      if(d.integration) htmlBlocks.push(section('Интеграция', `<div>${esc(d.integration)}</div>`, false));
+      htmlBlocks.push(renderList('Практика (что можно сделать)', d.actions || [], false));
+      htmlBlocks.push(renderList('Вопросы к себе', d.questions || [], false));
+      htmlBlocks.push(renderCards(d.freud_brief, d.jung_brief, false));
+      if(d.movie_tip) htmlBlocks.push(section('Кино-отсылка', `<div>Кстати, похожий сюжет встречается в: <i>${esc(d.movie_tip)}</i></div>`, false));
+
+      const body = htmlBlocks.filter(Boolean).join('');
+      return (body ? controlsBar()+body : `<div class="note">Не удалось распознать структуру ответа. См. сырой JSON ниже.</div>`);
+    }catch(e){
+      return `<div class="err">Ошибка форматирования: ${esc(e.message||e)}</div>`;
+    }
+  }
+
+  function wireControls(){
+    const details = out.querySelectorAll('details.sec');
+    const collapse = $('#collapseAll');
+    const expand = $('#expandAll');
+    collapse?.addEventListener('click', ()=> details.forEach(d=> d.removeAttribute('open')));
+    expand?.addEventListener('click',   ()=> details.forEach(d=> d.setAttribute('open','')));
+  }
+
+  // --- Сетевые действия ---
   $('#run').addEventListener('click', async ()=>{
     if(!validate()) return;
     s.textContent = 'Думаю…';
-    out.textContent = '';
+    out.classList.add('muted'); out.innerHTML = '';
+    raw.textContent = '';
     try{
       const resp = await fetch(BACKEND_URL,{
         method:'POST',
@@ -122,17 +222,22 @@
         throw new Error(txt || ('HTTP '+resp.status));
       }
       const data = await resp.json();
-      out.textContent = JSON.stringify(data, null, 2);
-      s.textContent = 'Готово';
+      out.innerHTML = renderHTML(data);
+      out.classList.remove('muted');
+      raw.textContent = JSON.stringify(data, null, 2);
+      wireControls();
+      s.innerHTML = '<span class="ok">Готово</span>';
     }catch(e){
-      s.textContent = 'Ошибка';
-      out.textContent = String(e);
+      s.innerHTML = '<span class="err">Ошибка</span>';
+      out.innerHTML = `<div class="err">${esc(String(e))}</div>`;
     }
   });
 
   $('#copy').addEventListener('click', async ()=>{
     try{
-      await navigator.clipboard.writeText(out.textContent);
+      const opened = Array.from(out.querySelectorAll('details.sec[open]'))
+        .map(d=>d.innerText).join('\n\n');
+      await navigator.clipboard.writeText(opened || out.innerText);
       s.textContent='Скопировано';
       setTimeout(()=>s.textContent='Готово.',1200)
     }catch{
