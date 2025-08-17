@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Толкование снов — MVP (GPT-5)</title>
+  <style>
+    body{margin:0;background:#0b0c10;color:#e8eaf0;font:16px/1.5 system-ui,Segoe UI,Roboto,Arial}
+    .wrap{max-width:820px;margin:40px auto;padding:20px}
+    .card{background:#12141a;border:1px solid #222533;border-radius:18px;padding:22px}
+    h1{margin:0 0 8px}
+    label{display:block;margin:12px 0 6px}
+    textarea,input,select{width:100%;background:#0f1117;border:1px solid #2a2f3a;color:#e8eaf0;border-radius:12px;padding:12px}
+    textarea{min-height:140px}
+    button{border:0;background:linear-gradient(135deg,#14b8a6,#06b6d4);color:#07131a;font-weight:700;padding:12px 16px;border-radius:12px;cursor:pointer}
+    .muted{color:#9aa4b2}
+    pre{white-space:pre-wrap;background:#0f1117;border:1px solid #2a2f3a;border-radius:12px;padding:12px}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>Толкование снов — MVP</h1>
+      <p class="muted">Юнг + Фрейд, современным языком. Бэкенд: крошечный прокси к GPT-5.</p>
+
+      <label for="dream">Опишите ваш сон *</label>
+      <textarea id="dream" placeholder="Напр.: ‘Я опаздываю на поезд, теряю телефон…’"></textarea>
+
+      <details>
+        <summary>Контекст (необязательно)</summary>
+        <label for="age">Возраст</label>
+        <input id="age" placeholder="Напр., 28" />
+        <label for="stress">Стресс-фактор</label>
+        <input id="stress" placeholder="Напр., дедлайны/переезд" />
+        <label for="repeats">Сон повторяется?</label>
+        <select id="repeats">
+          <option value="">Не указано</option>
+          <option value="yes">Да</option>
+          <option value="no">Нет</option>
+        </select>
+      </details>
+
+      <div style="display:flex;gap:10px;margin:12px 0 6px">
+        <button id="run">Интерпретировать</button>
+        <button id="copy">Скопировать</button>
+      </div>
+
+      <div id="status" class="muted" style="margin:8px 0">Готово.</div>
+      <pre id="out" class="muted">Здесь появится структурированный разбор (JSON → потом можно красиво отрендерить).</pre>
+    </div>
+    <p class="muted" style="margin-top:10px">Дисклеймер: творческая интерпретация, не медицинский/юридический совет.</p>
+  </div>
+
+<script>
+  // ⬇️ ВСТАВЬ URL ТВОЕГО CLOUDFLARE WORKER
+  const BACKEND_URL = "https://YOUR-WORKER.SUBDOMAIN.workers.dev/interpret";
+
+  const $ = sel => document.querySelector(sel);
+  const s = $('#status');
+  const out = $('#out');
+
+  function payload(){
+    return {
+      dream_text: $('#dream').value.trim(),
+      context: {
+        age: $('#age').value.trim() || undefined,
+        stress: $('#stress').value.trim() || undefined,
+        repeats: $('#repeats').value || undefined
+      }
+    }
+  }
+
+  function validate(){
+    if(!$('#dream').value.trim() || $('#dream').value.trim().length < 12){
+      alert('Добавьте 1–2 фразы, чтобы интерпретация была осмысленной.');
+      return false;
+    }
+    return true;
+  }
+
+  $('#run').addEventListener('click', async ()=>{
+    if(!validate()) return;
+    s.textContent = 'Думаю…';
+    out.textContent = '';
+    try{
+      const resp = await fetch(BACKEND_URL,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(payload())
+      });
+      if(!resp.ok){
+        const txt = await resp.text();
+        throw new Error(txt || ('HTTP '+resp.status));
+      }
+      const data = await resp.json();
+      out.textContent = JSON.stringify(data, null, 2);
+      s.textContent = 'Готово';
+    }catch(e){
+      s.textContent = 'Ошибка';
+      out.textContent = String(e);
+    }
+  });
+
+  $('#copy').addEventListener('click', async ()=>{
+    try{
+      await navigator.clipboard.writeText(out.textContent);
+      s.textContent='Скопировано';
+      setTimeout(()=>s.textContent='Готово.',1200)
+    }catch{
+      alert('Скопируйте вручную');
+    }
+  });
+</script>
+</body>
+</html>
