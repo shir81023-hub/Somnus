@@ -6,32 +6,56 @@
   <title>Толкование снов — MVP (GPT-5)</title>
   <style>
     body{margin:0;background:#0b0c10;color:#e8eaf0;font:16px/1.5 system-ui,Segoe UI,Roboto,Arial}
-    .wrap{max-width:820px;margin:40px auto;padding:20px}
-    .card{background:#12141a;border:1px solid #222533;border-radius:18px;padding:22px}
-    h1{margin:0 0 8px}
+    .wrap{max-width:880px;margin:40px auto;padding:20px}
+    .card{background:#12141a;border:1px solid #222533;border-radius:18px;padding:24px}
+    h1{margin:0 0 6px;font-size:34px}
+    .tagline{margin:0 0 18px;color:#9aa4b2}
     label{display:block;margin:12px 0 6px}
     textarea,input,select{width:100%;background:#0f1117;border:1px solid #2a2f3a;color:#e8eaf0;border-radius:12px;padding:12px}
     textarea{min-height:140px}
     button{border:0;background:linear-gradient(135deg,#14b8a6,#06b6d4);color:#07131a;font-weight:700;padding:12px 16px;border-radius:12px;cursor:pointer}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
     .muted{color:#9aa4b2}
     pre{white-space:pre-wrap;background:#0f1117;border:1px solid #2a2f3a;border-radius:12px;padding:12px}
+    details{margin-top:8px}
+    summary{cursor:pointer;color:#cbd5e1}
   </style>
 </head>
 <body>
   <div class="wrap">
     <div class="card">
       <h1>Толкование снов — MVP</h1>
-      <p class="muted">Юнг + Фрейд, современным языком. Бэкенд: крошечный прокси к GPT-5.</p>
+      <p class="tagline">
+        Юнг + Фрейд <i>без мистики</i>: коротко, ясно, по-человечески.  
+        Нажмите «Интерпретировать» — получите ответ в 10 блоках: краткий вывод, символы, Юнг, Фрейд, интеграция, практика, вопросы и др.
+      </p>
 
       <label for="dream">Опишите ваш сон *</label>
       <textarea id="dream" placeholder="Напр.: ‘Я опаздываю на поезд, теряю телефон…’"></textarea>
 
       <details>
         <summary>Контекст (необязательно)</summary>
-        <label for="age">Возраст</label>
-        <input id="age" placeholder="Напр., 28" />
+
+        <div class="row">
+          <div>
+            <label for="age">Возраст</label>
+            <input id="age" placeholder="Напр., 28" />
+          </div>
+
+          <div>
+            <label for="gender">Пол</label>
+            <select id="gender">
+              <option value="">Не указано</option>
+              <option value="female">Женский</option>
+              <option value="male">Мужской</option>
+              <option value="other">Другое/не указывать</option>
+            </select>
+          </div>
+        </div>
+
         <label for="stress">Стресс-фактор</label>
-        <input id="stress" placeholder="Напр., дедлайны/переезд" />
+        <input id="stress" placeholder="Напр., дедлайны, переезд, конфликт…" />
+
         <label for="repeats">Сон повторяется?</label>
         <select id="repeats">
           <option value="">Не указано</option>
@@ -40,7 +64,7 @@
         </select>
       </details>
 
-      <div style="display:flex;gap:10px;margin:12px 0 6px">
+      <div style="display:flex;gap:10px;margin:14px 0 6px">
         <button id="run">Интерпретировать</button>
         <button id="copy">Скопировать</button>
       </div>
@@ -48,7 +72,10 @@
       <div id="status" class="muted" style="margin:8px 0">Готово.</div>
       <pre id="out" class="muted">Здесь появится структурированный разбор (JSON → потом можно красиво отрендерить).</pre>
     </div>
-    <p class="muted" style="margin-top:10px">Дисклеймер: творческая интерпретация, не медицинский/юридический совет.</p>
+
+    <p class="muted" style="margin-top:10px">
+      Дисклеймер: творческая интерпретация, не медицинский/юридический совет.
+    </p>
   </div>
 
 <script>
@@ -64,6 +91,7 @@
       dream_text: $('#dream').value.trim(),
       context: {
         age: $('#age').value.trim() || undefined,
+        gender: $('#gender').value || undefined,
         stress: $('#stress').value.trim() || undefined,
         repeats: $('#repeats').value || undefined
       }
@@ -71,7 +99,8 @@
   }
 
   function validate(){
-    if(!$('#dream').value.trim() || $('#dream').value.trim().length < 12){
+    const t = $('#dream').value.trim();
+    if(!t || t.length < 12){
       alert('Добавьте 1–2 фразы, чтобы интерпретация была осмысленной.');
       return false;
     }
